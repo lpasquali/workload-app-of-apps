@@ -1,12 +1,23 @@
 # Workload app-of-apps (Argo CD)
 
-A **reusable** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) **slice** of platform software: child `Application` resources here cover **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. The destination is always `https://kubernetes.default.svc` (Argo on the workload cluster).
+A **reusable, generic** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) app-of-apps tree: child `Application` resources for **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. The destination is always `https://kubernetes.default.svc` (Argo on the workload cluster).
 
-**Not everything on the cluster is in this repo.** Other add-ons can be installed by **bootstrap**, **CAAPH** `HelmChartProxy` charts that are not wired to this Git path, **operators** (OLM or native), **other Argo `Application` trees**, or **day-2** tooling. This repository only holds the manifests that the **root** app-of-apps syncs from this Kustomize root; it is not an inventory of every workload you run.
+This repo is the **Kustomize `source.path`** for the **root** `Application` that points at these manifests (same cluster, `https://kubernetes.default.svc`).
 
 **How Argo runs:** the **Argo CD control plane** on the workload is expected from the **[Argo CD Operator](https://argocd-operator.readthedocs.io/)** (e.g. an `ArgoCD` custom resource) or an equivalent product (e.g. **Red Hat OpenShift GitOps**). This repository does **not** install the Argo server or repo-server itself—only child `Application` YAMLs and optional patches.
 
 **How that root app is registered:** in our bootstrap, `bootstrap-capi.sh` uses **CAAPH** to apply the **[argocd-apps](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd-apps)** `HelmChartProxy` on the management cluster, which creates the root `Application` and Git coordinates. The upstream **argo-cd** Helm chart via CAAPH is **off by default** so it does not replace the operator. **CAAPH is the only supported GitOps mode** for that wiring. Nothing in this tree is hard-coded to a single cluster name.
+
+## What Argo CD installs (audit)
+
+| Source | What it creates | Notes |
+|--------|----------------|--------|
+| **CAAPH `argocd-apps` Helm chart** (from `bootstrap-capi.sh`) | One **root** `Application` named `WORKLOAD_CLUSTER_NAME` with `source.repoURL` + `source.path` pointing at this repo | The only `Application` not stored in Git here; it is the entry point for the app-of-apps. |
+| **This Git tree** (synced as Kustomize by that root app) | Child `Application` resources: `metrics-server`, `kyverno`, `cert-manager`, `proxmox-csi` (per overlay) | All YAML under `base/` and `examples/`; nothing else. |
+
+**HelmChart** installs that are **not** Argo `Application` resources (e.g. Cilium or optional `argo-cd` via CAAPH) are outside this list.
+
+`bootstrap-capi.sh` no longer calls the legacy `apply_workload_argocd_applications` path, so the script does not push platform `Application` YAML to the workload **besides** what the `argocd-apps` `HelmChartProxy` creates (the root) and what Git defines (the children).
 
 ## Layout
 
