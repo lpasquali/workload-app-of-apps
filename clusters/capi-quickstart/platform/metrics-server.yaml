@@ -1,0 +1,34 @@
+# Sync wave -3: resource metrics on the workload (kubectl top / HPA).
+# Aligns with bootstrap-capi.sh METRICS_SERVER_GIT_CHART_TAG + kubelet-insecure-tls.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: capi-quickstart-metrics-server
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  source:
+    repoURL: https://github.com/kubernetes-sigs/metrics-server
+    path: charts/metrics-server
+    targetRevision: v0.7.2
+    helm:
+      releaseName: metrics-server
+      values: |
+        defaultArgs:
+          - --cert-dir=/tmp
+          - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+          - --kubelet-use-node-status-port
+          - --metric-resolution=15s
+        args:
+          - --kubelet-insecure-tls
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

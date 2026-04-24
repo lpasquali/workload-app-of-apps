@@ -1,0 +1,12 @@
+# Local overrides (never commit cluster-specific secrets)
+**/secrets/
+*.decrypted.yaml
+.env
+.env.*
+*.pem
+*.key
+
+# Editors
+.DS_Store
+.idea/
+.vscode/

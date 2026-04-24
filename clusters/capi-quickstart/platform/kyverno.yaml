@@ -1,0 +1,55 @@
+# Sync wave 0. Kyverno (Helm). Compare options help with large CRDs in Argo 2.10+.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: capi-quickstart-kyverno
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  source:
+    repoURL: https://kyverno.github.io/kyverno/
+    chart: kyverno
+    targetRevision: 3.7.1
+    helm:
+      values: |
+        config:
+          preserve: false
+          webhookLabels:
+            app.kubernetes.io/managed-by: argocd
+        global:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: Exists
+              effect: NoSchedule
+            - key: "node-role.kubernetes.io/master"
+              operator: Exists
+              effect: NoSchedule
+        admissionController:
+          replicas: 1
+        backgroundController:
+          replicas: 1
+        cleanupController:
+          replicas: 1
+        reportsController:
+          replicas: 1
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

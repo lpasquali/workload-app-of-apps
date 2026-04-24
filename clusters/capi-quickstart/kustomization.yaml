@@ -1,0 +1,11 @@
+# Example cluster: copy this directory to clusters/<WORKLOAD_CLUSTER_NAME> for additional clusters.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - platform/metrics-server.yaml
+  - platform/proxmox-csi.yaml
+  - platform/kyverno.yaml
+  - platform/cert-manager.yaml

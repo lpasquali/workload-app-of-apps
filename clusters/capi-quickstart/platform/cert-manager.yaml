@@ -1,0 +1,26 @@
+# Sync wave 0. cert-manager (installCRDs for first-time; keep CRDs in sync with chart).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: capi-quickstart-cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.20.2
+    helm:
+      values: |
+        installCRDs: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
