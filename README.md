@@ -2,7 +2,11 @@
 
 A **reusable, generic** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) app-of-apps tree: child `Application` resources for **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. The destination is always `https://kubernetes.default.svc` (Argo on the workload cluster).
 
-This repo is meant to be the **Kustomize `source.path`** for the root `Application` created by the **Cluster API Add-on Provider for Helm (CAAPH)**: Argo CD and the [argocd-apps](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd-apps) chart on the workload are installed via `HelmChartProxy`; the root app then syncs this Git path. **CAAPH is the only supported GitOps mode** here. Nothing in the tree is hard-coded to a single cluster name.
+This repo is the **Kustomize `source.path`** for the **root** `Application` that points at these manifests (same cluster, `https://kubernetes.default.svc`).
+
+**How Argo runs:** the **Argo CD control plane** on the workload is expected from the **[Argo CD Operator](https://argocd-operator.readthedocs.io/)** (e.g. an `ArgoCD` custom resource) or an equivalent product (e.g. **Red Hat OpenShift GitOps**). This repository does **not** install the Argo server or repo-server itself—only child `Application` YAMLs and optional patches.
+
+**How that root app is registered:** in our bootstrap, `bootstrap-capi.sh` uses **CAAPH** to apply the **[argocd-apps](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd-apps)** `HelmChartProxy` on the management cluster, which creates the root `Application` and Git coordinates. The upstream **argo-cd** Helm chart via CAAPH is **off by default** so it does not replace the operator. **CAAPH is the only supported GitOps mode** for that wiring. Nothing in this tree is hard-coded to a single cluster name.
 
 ## Layout
 
@@ -35,7 +39,7 @@ In our environments, **sensitive data for Argo CD and the workloads it syncs** i
    - No Proxmox: **`examples/k8s-only`**.
    - Secret named like `<name>-proxmox-csi-config`: start from **`examples/proxmox-secret-name`**, edit `patches/proxmox-csi-secret-name.yaml` (`MY_CLUSTER` → your name), and use that directory as the path, **or** copy it to e.g. `clusters/prod-foo/`.
 
-`bootstrap-capi.sh` only supports **CAAPH** for workload Argo; it should set the app-of-apps Git coordinates, for example:
+Install the **Argo CD Operator** (or your vendor GitOps operator) on the **workload** cluster *before* the `argocd-apps` Helm release can create `Application` CRs, or sync will fail. Then `bootstrap-capi.sh` (CAAPH) should set the app-of-apps Git coordinates, for example:
 
 ```text
 WORKLOAD_GITOPS_MODE=caaph
@@ -44,7 +48,7 @@ WORKLOAD_APP_OF_APPS_GIT_PATH=examples/default
 WORKLOAD_APP_OF_APPS_GIT_REF=main
 ```
 
-The CAAPH-installed **argocd-apps** root `Application` uses that **path**; it expands to the child `Application` manifests. The root app’s **`metadata.name`** is your `WORKLOAD_CLUSTER_NAME` on the **management** cluster (Argo in `HelmChartProxy` terms) and is **independent** of the short names used for child apps in this tree.
+The **argocd-apps** `HelmChartProxy` (CAAPH) creates the root `Application` with that **path**; that app expands to the child `Application` manifests on the **workload** (in-cluster Argo from the operator). The root app’s **`metadata.name`** is your `WORKLOAD_CLUSTER_NAME` in bootstrap terms and is **independent** of the short names (e.g. `metrics-server`) used for child apps in this tree.
 
 ## Optional: `clusters/<name>/`
 
@@ -72,6 +76,7 @@ kustomize build base
 
 - [Argo CD: Secret management](https://argo-cd.readthedocs.io/en/stable/operator-manual/secret-management/) (destination-cluster vs manifest-generation)
 - [Kubernetes Secrets Store CSI driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver)
+- [Argo CD operator (community)](https://argocd-operator.readthedocs.io/) — workload control plane
 - [Argo CD cluster bootstrapping / app of apps](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/)
 - [Cluster API workload GitOps (CAAPH)](https://cluster-api.sigs.k8s.io/tasks/workload-bootstrap-gitops)
 - [CAAPH quick start](https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/blob/main/docs/quick-start.md)

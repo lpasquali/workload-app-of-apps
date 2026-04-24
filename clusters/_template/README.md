@@ -11,7 +11,7 @@ This repo is generic: with **CAAPH**, reuse **`examples/default`** or **`example
 
 2. Edit patches or add `platform/<app>.yaml` and list them in `kustomization.yaml`.
 
-3. In CAAPH bootstrap, set `WORKLOAD_APP_OF_APPS_GIT_PATH=clusters/<your-name>` (or `examples/...` while experimenting).
+3. In CAAPH bootstrap, set `WORKLOAD_APP_OF_APPS_GIT_PATH=clusters/<your-name>` (or `examples/...` while experimenting). Argo on the cluster should be from the **Argo CD Operator** unless you enable `WORKLOAD_ARGOCD_HELM_VIA_CAAPH` in `bootstrap-capi.sh`.
 
 4. The root `Application` `metadata.name` is still your management-side `WORKLOAD_CLUSTER_NAME` — that is independent of the child app names in this tree.
 
