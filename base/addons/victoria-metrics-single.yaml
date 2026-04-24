@@ -1,4 +1,8 @@
-# Sync wave 6. VictoriaMetrics single (scrape + Service name vmsingle for Grafana).
+# Sync wave 6. VictoriaMetrics single (Service vmsingle for Grafana/OTel).
+# Chart keys are under server.* — server.scrape.enabled turns on the chart’s full default Prometheus-compatible
+# scrape config (apiserver, nodes/cAdvisor, kubernetes SD for prometheus.io annotations on pods & services).
+# extraScrapeConfigs appends jobs for every Endpoints port named metrics|http-metrics (Argo CD operator
+# Services, cert-manager, Kyverno, etc. often expose these without prometheus.io annotations).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -18,8 +22,22 @@ spec:
       values: |
         server:
           fullnameOverride: vmsingle
-        scrape:
-          enabled: true
+          scrape:
+            enabled: true
+            extraScrapeConfigs:
+              - job_name: kubernetes-endpoints-metrics-ports
+                kubernetes_sd_configs:
+                  - role: endpoints
+                relabel_configs:
+                  - action: keep
+                    source_labels: [__meta_kubernetes_endpoint_port_name]
+                    regex: metrics|http-metrics
+                  - action: replace
+                    source_labels: [__meta_kubernetes_namespace]
+                    target_label: namespace
+                  - action: replace
+                    source_labels: [__meta_kubernetes_service_name]
+                    target_label: service
   syncPolicy:
     automated:
       prune: true
