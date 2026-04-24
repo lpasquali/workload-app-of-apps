@@ -19,7 +19,11 @@ You can also wire it from **Cluster API** workload [GitOps (CAAPH)](https://clus
 
 Child `Application` **metadata.name** values are **short and cluster-agnostic** (e.g. `metrics-server`), because a typical in-cluster Argo per workload cluster has one namespace and no collision with other clusters.
 
-**No API secrets** are stored in this repo. Proxmox CSI’s `existingConfigSecret` must match a Secret that already exists on the target (bootstrap job, Sealed Secrets, SOPS, etc.).
+## Secret management
+
+This repo has **no credentials in Git**. Values such as Proxmox CSI’s `existingConfigSecret` only **reference** a `Secret` that must already exist on the **workload (destination) cluster**—Argo never needs the raw secret material in the app-of-apps manifests. That matches Argo CD’s recommended **destination cluster** model (see [Secret Management](https://argo-cd.readthedocs.io/en/stable/operator-manual/secret-management/)).
+
+In our environments, **sensitive data for Argo CD and the workloads it syncs** is provided via the **[Kubernetes Secrets Store CSI driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver)** (integrate an external or cloud secret store, sync into Kubernetes `Secret` objects, optional rotation). The Helm values here only point at those **Secret names**; provisioning the backing volume/provider is outside this tree (bootstrap, platform chart, or a dedicated platform app).
 
 ## Point your root `Application` (or CAAPH) at a path
 
@@ -66,6 +70,8 @@ kustomize build base
 
 ## References
 
+- [Argo CD: Secret management](https://argo-cd.readthedocs.io/en/stable/operator-manual/secret-management/) (destination-cluster vs manifest-generation)
+- [Kubernetes Secrets Store CSI driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver)
 - [Argo CD cluster bootstrapping / app of apps](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/)
 - [Cluster API workload GitOps (CAAPH)](https://cluster-api.sigs.k8s.io/tasks/workload-bootstrap-gitops)
 - [CAAPH quick start](https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/blob/main/docs/quick-start.md)
