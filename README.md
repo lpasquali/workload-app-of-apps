@@ -35,7 +35,7 @@ In our environments, **sensitive data for Argo CD and the workloads it syncs** i
    - No Proxmox: **`examples/k8s-only`**.
    - Secret named like `<name>-proxmox-csi-config`: start from **`examples/proxmox-secret-name`**, edit `patches/proxmox-csi-secret-name.yaml` (`MY_CLUSTER` → your name), and use that directory as the path, **or** copy it to e.g. `clusters/prod-foo/`.
 
-`bootstrap-capi.sh` (and similar) should set **CAAPH** and the app-of-apps Git coordinates, for example:
+`bootstrap-capi.sh` only supports **CAAPH** for workload Argo; it should set the app-of-apps Git coordinates, for example:
 
 ```text
 WORKLOAD_GITOPS_MODE=caaph
