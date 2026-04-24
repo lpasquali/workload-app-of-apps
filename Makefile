@@ -26,3 +26,8 @@ render-examples:
 .PHONY: render-default
 render-default:
 	$(KUSTOMIZE) examples/default
+
+# Includes all add-ons that legacy bootstrap used to apply as in-cluster Applications.
+.PHONY: render-full
+render-full:
+	$(KUSTOMIZE) examples/full-bootstrap-parity

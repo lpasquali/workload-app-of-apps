@@ -1,0 +1,26 @@
+# Sync wave -3 (with metrics-server). SPIRE CRDs chart — must run before the main spire app.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spire-crds
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spire
+  source:
+    repoURL: https://spiffe.github.io/helm-charts-hardened
+    chart: spire-crds
+    targetRevision: 0.5.0
+    helm:
+      values: |
+        {}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,29 @@
+# Sync wave 6. VictoriaMetrics single (scrape + Service name vmsingle for Grafana).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: victoria-metrics-single
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: victoria-metrics
+  source:
+    repoURL: https://victoriametrics.github.io/helm-charts/
+    chart: victoria-metrics-single
+    targetRevision: "*"
+    helm:
+      values: |
+        server:
+          fullnameOverride: vmsingle
+        scrape:
+          enabled: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

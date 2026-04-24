@@ -1,0 +1,37 @@
+# Sync wave 8. Keycloak (codecentric keycloakx). SPIFFE OIDC env references spire when both are installed.
+# Patch `extraEnv` / hostname if you use a different release name or ingress.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  source:
+    repoURL: https://codecentric.github.io/helm-charts
+    chart: keycloakx
+    targetRevision: "*"
+    helm:
+      values: |
+        args:
+          - start
+        extraEnv: |
+          - name: KC_HOSTNAME_STRICT
+            value: "false"
+          - name: KC_HOSTNAME
+            value: "keycloak-keycloakx.keycloak.svc.cluster.local"
+          - name: SPIFFE_OIDC_WELL_KNOWN_URL
+            value: "http://spire-spiffe-oidc-discovery-provider.spire.svc/.well-known/openid-configuration"
+          - name: SPIFFE_OIDC_ISSUER_HOST
+            value: "spire-spiffe-oidc-discovery-provider.spire.svc"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

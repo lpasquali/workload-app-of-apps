@@ -1,0 +1,18 @@
+# Optional add-ons that `bootstrap-capi.sh` used to render via `apply_workload_argocd_applications`.
+# Include with `examples/full-bootstrap-parity` or compose your own overlay.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - crossplane.yaml
+  - cloudnative-pg.yaml
+  - external-secrets.yaml
+  - infisical-secrets-operator.yaml
+  - spire-crds.yaml
+  - spire.yaml
+  - victoria-metrics-single.yaml
+  - opentelemetry-collector.yaml
+  - grafana.yaml
+  - keycloak.yaml

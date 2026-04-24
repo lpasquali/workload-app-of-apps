@@ -1,6 +1,6 @@
 # Workload app-of-apps (Argo CD)
 
-A **reusable, generic** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) app-of-apps tree: child `Application` resources for **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. The destination is always `https://kubernetes.default.svc` (Argo on the workload cluster).
+A **reusable** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) app-of-apps tree. **`examples/default`** keeps a **small** set: **metrics-server**, **Kyverno**, **cert-manager**, **Proxmox CSI**. **`examples/full-bootstrap-parity`** adds every optional add-on the legacy `apply_workload_argocd_applications` path in `bootstrap-capi.sh` used to create (Crossplane, CNPG, ESO, Infisical, SPIRE, VictoriaMetrics, OTel, Grafana, Keycloak). The destination is always `https://kubernetes.default.svc`.
 
 This repo is the **Kustomize `source.path`** for the **root** `Application` that points at these manifests (same cluster, `https://kubernetes.default.svc`).
 
@@ -13,7 +13,7 @@ This repo is the **Kustomize `source.path`** for the **root** `Application` that
 | Source | What it creates | Notes |
 |--------|----------------|--------|
 | **CAAPH `argocd-apps` Helm chart** (from `bootstrap-capi.sh`) | One **root** `Application` named `WORKLOAD_CLUSTER_NAME` with `source.repoURL` + `source.path` pointing at this repo | The only `Application` not stored in Git here; it is the entry point for the app-of-apps. |
-| **This Git tree** (synced as Kustomize by that root app) | Child `Application` resources: `metrics-server`, `kyverno`, `cert-manager`, `proxmox-csi` (per overlay) | All YAML under `base/` and `examples/`; nothing else. |
+| **This Git tree** (Kustomize under your chosen `source.path`) | Child `Application` resources — see `base/core`, `base/platform`, and optionally `base/addons` | `examples/default` = core + Proxmox; `examples/full-bootstrap-parity` = default + all `base/addons` (matches legacy bootstrap list). **Not in Git:** Backstage (no default chart URL in the script) and **keycloak-realm-operator** (needs a Git `repoURL`); add those in your own overlay if you use them. |
 
 **HelmChart** installs that are **not** Argo `Application` resources (e.g. Cilium or optional `argo-cd` via CAAPH) are outside this list.
 
@@ -26,9 +26,11 @@ This repo is the **Kustomize `source.path`** for the **root** `Application` that
 | `base/core/` | Kustomize bundle: **metrics-server**, **kyverno**, **cert-manager** (no Proxmox). |
 | `base/platform/proxmox-csi.yaml` | Optional **Proxmox CSI** `Application` (Helm, OCI). |
 | `base/kustomization.yaml` | **Full** stack: `core` + Proxmox CSI. |
+| `base/addons/` | Extra `Application` YAMLs (Crossplane, CNPG, ESO, Infisical, SPIRE, VM, OTel, Grafana, Keycloak) for parity with in-script Argo. |
 | `examples/default/` | Root path = full `base` (default CSI Secret name). |
 | `examples/k8s-only/` | Root path = `core` only (no Proxmox). |
 | `examples/proxmox-secret-name/` | Full `base` + **example patch** for `<cluster>-proxmox-csi-config` style secrets. |
+| `examples/full-bootstrap-parity/` | `base` + **`base/addons`** — large footprint; use when you want the same add-ons the script used to `kubectl apply` as Argo apps. |
 | `clusters/<name>/` | Optional: **your** overlay (copy an `example` and customize). |
 | `cluster.env.example` | Optional env var hints for `bootstrap-capi.sh` (CAAPH) and Git `path`/`ref`. |
 
@@ -49,6 +51,7 @@ In our environments, **sensitive data for Argo CD and the workloads it syncs** i
    - Full stack, default secret name: **`examples/default`** (or **`base`**, equivalent via `default`).
    - No Proxmox: **`examples/k8s-only`**.
    - Secret named like `<name>-proxmox-csi-config`: start from **`examples/proxmox-secret-name`**, edit `patches/proxmox-csi-secret-name.yaml` (`MY_CLUSTER` → your name), and use that directory as the path, **or** copy it to e.g. `clusters/prod-foo/`.
+   - **Legacy in-script add-ons** (same as old `apply_workload_argocd_applications`): set **`WORKLOAD_APP_OF_APPS_GIT_PATH=examples/full-bootstrap-parity`**. Review **SPIRE** `global.spire.clusterName` / `trustDomain` in `base/addons/spire.yaml` and **Keycloak** / SPIFFE discovery URLs; patch in an overlay to match your cluster and release names.
 
 Install the **Argo CD Operator** (or your vendor GitOps operator) on the **workload** cluster *before* the `argocd-apps` Helm release can create `Application` CRs, or sync will fail. Then `bootstrap-capi.sh` (CAAPH) should set the app-of-apps Git coordinates, for example:
 
@@ -81,6 +84,9 @@ make render
 kustomize build examples/default
 kustomize build examples/k8s-only
 kustomize build base
+make render-full
+# or
+kustomize build examples/full-bootstrap-parity
 ```
 
 ## References

@@ -1,0 +1,10 @@
+# Full parity with legacy `apply_workload_argocd_applications` in bootstrap-capi.sh (add-ons on by default there).
+# Heavier than `examples/default` — more namespaces, longer sync. Not included in `make render`? include it.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - ../../base
+  - ../../base/addons

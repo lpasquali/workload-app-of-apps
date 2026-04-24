@@ -1,0 +1,79 @@
+# Sync wave 5. SPIRE (hardened Helm chart). Patch `global.spire.clusterName` / trustDomain for your CAPI cluster name.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spire
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spire
+  source:
+    repoURL: https://spiffe.github.io/helm-charts-hardened
+    chart: spire
+    targetRevision: 0.28.4
+    helm:
+      values: |
+        global:
+          installAndUpgradeHooks:
+            enabled: false
+          deleteHooks:
+            enabled: false
+          spire:
+            clusterName: workload
+            trustDomain: k8s.workload.local
+        spire-server:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: Exists
+              effect: NoSchedule
+            - key: "node-role.kubernetes.io/master"
+              operator: Exists
+              effect: NoSchedule
+        spire-controller-manager:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: Exists
+              effect: NoSchedule
+            - key: "node-role.kubernetes.io/master"
+              operator: Exists
+              effect: NoSchedule
+        spire-agent:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: Exists
+              effect: NoSchedule
+            - key: "node-role.kubernetes.io/master"
+              operator: Exists
+              effect: NoSchedule
+        spiffe-csi-driver:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: Exists
+              effect: NoSchedule
+            - key: "node-role.kubernetes.io/master"
+              operator: Exists
+              effect: NoSchedule
+        spiffe-oidc-discovery-provider:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: Exists
+              effect: NoSchedule
+            - key: "node-role.kubernetes.io/master"
+              operator: Exists
+              effect: NoSchedule
+          bundleSource: CSI
+          config:
+            setKeyUse: true
+          tls:
+            spire:
+              enabled: false
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

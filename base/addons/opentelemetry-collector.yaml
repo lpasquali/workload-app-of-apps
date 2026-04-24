@@ -1,0 +1,28 @@
+# Sync wave 6. OpenTelemetry collector (image + mode required by chart).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opentelemetry-collector
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opentelemetry
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    targetRevision: 0.152.0
+    helm:
+      values: |
+        mode: deployment
+        image:
+          repository: otel/opentelemetry-collector-k8s
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
