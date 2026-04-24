@@ -1,8 +1,8 @@
 # Workload app-of-apps (Argo CD)
 
-A **reusable, generic** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) app-of-apps tree: child `Application` resources for **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. The destination is always `https://kubernetes.default.svc` (Argo on the workload cluster).
+A **reusable** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) **slice** of platform software: child `Application` resources here cover **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. The destination is always `https://kubernetes.default.svc` (Argo on the workload cluster).
 
-This repo is the **Kustomize `source.path`** for the **root** `Application` that points at these manifests (same cluster, `https://kubernetes.default.svc`).
+**Not everything on the cluster is in this repo.** Other add-ons can be installed by **bootstrap**, **CAAPH** `HelmChartProxy` charts that are not wired to this Git path, **operators** (OLM or native), **other Argo `Application` trees**, or **day-2** tooling. This repository only holds the manifests that the **root** app-of-apps syncs from this Kustomize root; it is not an inventory of every workload you run.
 
 **How Argo runs:** the **Argo CD control plane** on the workload is expected from the **[Argo CD Operator](https://argocd-operator.readthedocs.io/)** (e.g. an `ArgoCD` custom resource) or an equivalent product (e.g. **Red Hat OpenShift GitOps**). This repository does **not** install the Argo server or repo-server itself—only child `Application` YAMLs and optional patches.
 

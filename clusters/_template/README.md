@@ -1,6 +1,6 @@
 # Your cluster overlay (optional)
 
-This repo is generic: with **CAAPH**, reuse **`examples/default`** or **`examples/k8s-only`** as `WORKLOAD_APP_OF_APPS_GIT_PATH`, or add a small folder under `clusters/<name>/` for **cluster-specific** patches (CSI secret name, extra `Application` YAMLs, etc.).
+This repo is generic: with **CAAPH**, reuse **`examples/default`** or **`examples/k8s-only`** as `WORKLOAD_APP_OF_APPS_GIT_PATH`, or add a small folder under `clusters/<name>/` for **cluster-specific** patches (CSI secret name, extra `Application` YAMLs, etc.). Only the apps in **this** app-of-apps tree are defined here; other cluster software may live in bootstrap, other Git repos, or non-Argo install paths.
 
 **Suggested flow**
 
