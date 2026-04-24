@@ -1,0 +1,11 @@
+# Core platform apps (workload-agnostic: metrics, policy, cert-manager).
+# Compose with `../platform/proxmox-csi.yaml` for Proxmox storage, or use this alone.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - metrics-server.yaml
+  - kyverno.yaml
+  - cert-manager.yaml

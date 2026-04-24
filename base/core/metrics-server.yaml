@@ -1,9 +1,8 @@
-# Sync wave -3: resource metrics on the workload (kubectl top / HPA).
-# Aligns with bootstrap-capi.sh METRICS_SERVER_GIT_CHART_TAG + kubelet-insecure-tls.
+# Sync wave -3. Resource metrics (kubectl top / HPA) — tune args for your kubelet TLS / endpoint behavior.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: capi-quickstart-metrics-server
+  name: metrics-server
   annotations:
     argocd.argoproj.io/sync-wave: "-3"
 spec:

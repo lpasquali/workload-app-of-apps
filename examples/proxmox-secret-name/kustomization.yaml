@@ -1,0 +1,12 @@
+# Example: if your Secret is named <cluster-name>-proxmox-csi-config (e.g. bootstrap-capi),
+# patch the CSI `Application` so `existingConfigSecret` matches. Edit the patch file, then
+# set WORKLOAD_APP_OF_APPS_GIT_PATH to this directory (or copy this overlay under `clusters/<name>/`).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - ../../base
+patches:
+  - path: patches/proxmox-csi-secret-name.yaml

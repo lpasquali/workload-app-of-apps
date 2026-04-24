@@ -1,69 +1,67 @@
 # Workload app-of-apps (Argo CD)
 
-This repository is a **per-cluster (or per-environment) Argo CD app-of-apps** tree for a **CAPI/Proxmox workload cluster** where Argo CD runs **in-cluster** and platform components are no longer defined only inside `bootstrap-capi.sh` ([Cluster API + CAAPH + GitOps](https://cluster-api.sigs.k8s.io/tasks/workload-bootstrap-gitops)).
+A **reusable, generic** in-cluster [Argo CD](https://argo-cd.readthedocs.io/) app-of-apps tree: child `Application` resources for **metrics-server**, **Kyverno**, **cert-manager**, and (optionally) **Proxmox CSI**. Use it for any cluster where Argo runs **in-cluster** and the destination is `https://kubernetes.default.svc`.
+
+You can also wire it from **Cluster API** workload [GitOps (CAAPH)](https://cluster-api.sigs.k8s.io/tasks/workload-bootstrap-gitops); nothing here is hard-coded to a single cluster name.
 
 ## Layout
 
 | Path | Purpose |
 |------|---------|
-| `clusters/<name>/` | Kustomize root Argo points at. `<name>` should match your CAPI `Cluster` name (e.g. `capi-quickstart`) so bootstrap flags stay obvious. |
-| `clusters/<name>/kustomization.yaml` | One place to enable/disable `Application` manifests under `platform/`. |
-| `clusters/<name>/platform/` | Child `Application` resources (Helm: metrics-server, CSI, policy, cert-manager, …). |
+| `base/core/` | Kustomize bundle: **metrics-server**, **kyverno**, **cert-manager** (no Proxmox). |
+| `base/platform/proxmox-csi.yaml` | Optional **Proxmox CSI** `Application` (Helm, OCI). |
+| `base/kustomization.yaml` | **Full** stack: `core` + Proxmox CSI. |
+| `examples/default/` | Root path = full `base` (default CSI Secret name). |
+| `examples/k8s-only/` | Root path = `core` only (no Proxmox). |
+| `examples/proxmox-secret-name/` | Full `base` + **example patch** for `<cluster>-proxmox-csi-config` style secrets. |
+| `clusters/<name>/` | Optional: **your** overlay (copy an `example` and customize). |
+| `cluster.env.example` | Optional env var hints for Git URL/path/ref (for bootstrap or scripts). |
 
-## Wire `bootstrap-capi.sh` (CAAPH path)
+Child `Application` **metadata.name** values are **short and cluster-agnostic** (e.g. `metrics-server`), because a typical in-cluster Argo per workload cluster has one namespace and no collision with other clusters.
 
-1. Point Git at this repo (push it to your forge and replace the URL below).
+**No API secrets** are stored in this repo. Proxmox CSI’s `existingConfigSecret` must match a Secret that already exists on the target (bootstrap job, Sealed Secrets, SOPS, etc.).
 
-2. For cluster name **`capi-quickstart`**, set:
+## Point your root `Application` (or CAAPH) at a path
 
-   ```text
-   WORKLOAD_GITOPS_MODE=caaph
-   WORKLOAD_APP_OF_APPS_GIT_URL=https://github.com/<org>/workload-app-of-apps.git
-   WORKLOAD_APP_OF_APPS_GIT_PATH=clusters/capi-quickstart
-   WORKLOAD_APP_OF_APPS_GIT_REF=main
-   ```
+1. Push this repo to your Git forge.
 
-   The [argocd-apps](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd-apps) chart in bootstrap creates a **root** `Application` whose `metadata.name` is your `WORKLOAD_CLUSTER_NAME` and whose `source.path` is the value of `WORKLOAD_APP_OF_APPS_GIT_PATH`. Kustomize in that path expands to the child `Application` manifests here.
+2. Set the **Kustomize root** as the `Application` **source path** (the directory that contains `kustomization.yaml`):
 
-3. The bootstrap script (CAAPH) still creates the **Proxmox CSI** API token **Secret** on the workload named `<workload-name>-proxmox-csi-config` when tokens are available; theCSI `Application` here references that name.
+   - Full stack, default secret name: **`examples/default`** (or **`base`**, equivalent via `default`).
+   - No Proxmox: **`examples/k8s-only`**.
+   - Secret named like `<name>-proxmox-csi-config`: start from **`examples/proxmox-secret-name`**, edit `patches/proxmox-csi-secret-name.yaml` (`MY_CLUSTER` → your name), and use that directory as the path, **or** copy it to e.g. `clusters/prod-foo/`.
 
-4. **No API secrets** are stored in this repo. `existingConfigSecret` in the CSI `Application` must match the Secret created on the cluster.
+Example bootstrap-style variables (names vary by your management script):
 
-## Add a new cluster
+```text
+WORKLOAD_GITOPS_MODE=caaph
+WORKLOAD_APP_OF_APPS_GIT_URL=https://github.com/<org>/workload-app-of-apps.git
+WORKLOAD_APP_OF_APPS_GIT_PATH=examples/default
+WORKLOAD_APP_OF_APPS_GIT_REF=main
+```
 
-1. Copy the example:
+The [argocd-apps](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd-apps) (or your) root `Application` should use that **path**; it expands to the child `Application` manifests. The root app’s **`metadata.name`** is usually your `WORKLOAD_CLUSTER_NAME` on the **management** cluster — that is **independent** of the short names inside this tree.
 
-   ```bash
-   cp -R clusters/capi-quickstart "clusters/<your-cluster-name>"
-   ```
+## Optional: `clusters/<name>/`
 
-2. Replace the prefix in `platform/*.yaml` from `capi-quickstart-` to `<your-cluster-name>-` (or use a small kustomize `namePrefix` in `kustomization.yaml`).
+For team-specific **patches** or extra charts, copy `examples/default` (or `examples/proxmox-secret-name`) to `clusters/<name>/` and set `WORKLOAD_APP_OF_APPS_GIT_PATH=clusters/<name>`. See `clusters/_template/README.md`.
 
-3. Set bootstrap `WORKLOAD_APP_OF_APPS_GIT_PATH=clusters/<your-cluster-name>` and `WORKLOAD_CLUSTER_NAME=<your-cluster-name>`.
+## Conventions (defaults in `base/`)
 
-## Conventions
-
-- **Destination** is always `https://kubernetes.default.svc` (Argo on the same cluster that runs the workloads).
-- **Sync waves** use `argocd.argoproj.io/sync-wave` to order installs (e.g. metrics-server before other controllers).
-- **Chart pin versions** are defaults aligned with `bootstrap-capi.sh`; pin or bump as you need (Renovate/bump-friendly).
-
-## Included platform apps (example `clusters/capi-quickstart`)
-
-| Wave | App | Notes |
-|------|-----|--------|
-| -3 | metrics-server | Upstream [charts/metrics-server](https://github.com/kubernetes-sigs/metrics-server) (kubelet TLS flags match typical CAPMOX). |
-| -2 | proxmox-csi | OCI chart; `existingConfigSecret` must exist on the cluster. |
-| 0 | kyverno | Policy engine; [Argo + Kyverno notes](https://kyverno.io/docs/installation/platform-notes/#notes-for-argocd-users). |
-| 0 | cert-manager | CRDs + controller; `installCRDs: true`. |
-
-Other add-ons (VictoriaMetrics, OpenTelemetry, Crossplane, CNPG, SPIRE, etc.) are easy to add as more `Application` YAMLs under `platform/`.
+- **Destination** is `https://kubernetes.default.svc` (same cluster as Argo).
+- **Sync waves** use `argocd.argoproj.io/sync-wave` to order installs.
+- **Chart / image versions** are pinned in YAML; bump as you need (Renovate-friendly).
 
 ## Validate locally
 
 With [kustomize](https://kubectl.docs.k8s.io/installation/kustomize/):
 
 ```bash
-kustomize build clusters/capi-quickstart
+make render
+# or
+kustomize build examples/default
+kustomize build examples/k8s-only
+kustomize build base
 ```
 
 ## References

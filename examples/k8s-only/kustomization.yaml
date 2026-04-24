@@ -1,0 +1,8 @@
+# No Proxmox: metrics-server, Kyverno, cert-manager only. Use for clusters without that CSI.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - ../../base/core

@@ -1,0 +1,9 @@
+# Kustomize root: everything in `base` (core + Proxmox CSI) with no overlay-specific patches.
+# Point the workload root `Application` source path here, or copy this folder to `clusters/<name>/`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - ../../base

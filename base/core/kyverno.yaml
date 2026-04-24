@@ -1,8 +1,8 @@
-# Sync wave 0. Kyverno (Helm). Compare options help with large CRDs in Argo 2.10+.
+# Sync wave 0. Kyverno — set ignoreDifferences if your Argo version requires webhook CA bundle diffs.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: capi-quickstart-kyverno
+  name: kyverno
   annotations:
     argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true

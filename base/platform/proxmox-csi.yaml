@@ -1,9 +1,10 @@
-# Sync wave -2. Proxmox CSI (OCI). Bootstrap must create the Secret
-# <WORKLOAD_CLUSTER_NAME>-proxmox-csi-config in the driver namespace.
+# Sync wave -2. Proxmox CSI (Helm, OCI). You MUST point existingConfigSecret at a Secret
+# that already exists on the target cluster (created by your bootstrap, Sealed Secrets, etc.).
+# Default name is generic; override with a Kustomize patch (see examples/).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: capi-quickstart-proxmox-csi
+  name: proxmox-csi
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 spec:
@@ -12,13 +13,12 @@ spec:
     server: https://kubernetes.default.svc
     namespace: csi-proxmox
   source:
-    # Same layout as bootstrap-capi.sh (PROXMOX_CSI_CHART_REPO_URL + name)
     repoURL: oci://ghcr.io/sergelogvinov/charts/proxmox-csi-plugin
     path: "."
     targetRevision: 0.5.7
     helm:
       values: |
-        existingConfigSecret: "capi-quickstart-proxmox-csi-config"
+        existingConfigSecret: "proxmox-csi-config"
         existingConfigSecretKey: config.yaml
         config:
           features:
